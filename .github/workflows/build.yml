@@ -1,72 +1,32 @@
-name: Build Signed AAB
+name: Java CI with Gradle
 
 on:
   push:
-    branches: [ main ]
-  workflow_dispatch:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v3
 
     - name: Set up JDK 17
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v3
       with:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Setup Gradle Wrapper
+    - name: Download gradle-wrapper.jar
       run: |
         mkdir -p gradle/wrapper
-        curl -sL https://services.gradle.org/distributions/gradle-8.7-bin.zip -o /tmp/gradle.zip
-        unzip -q /tmp/gradle.zip -d /tmp
-        cp /tmp/gradle-8.7/lib/gradle-wrapper-*.jar gradle/wrapper/gradle-wrapper.jar 2>/dev/null || true
-        if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
-          curl -sL https://raw.githubusercontent.com/nickg/gradle-wrapper-jar/master/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
-        fi
-        cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
-        distributionBase=GRADLE_USER_HOME
-        distributionPath=wrapper/dists
-        distributionUrl=https\://services.gradle.org/distributions/gradle-8.7-bin.zip
-        zipStoreBase=GRADLE_USER_HOME
-        zipStorePath=wrapper/dists
-        EOF
-        cat > gradlew << 'SCRIPT'
-        #!/bin/sh
-        exec java -classpath "$APP_HOME/gradle/wrapper/gradle-wrapper.jar" org.gradle.wrapper.GradleWrapperMain "$@"
-        SCRIPT
-        chmod +x gradlew
+        curl -L https://github.com/gradle/gradle/raw/v8.5.0/gradle/wrapper/gradle-wrapper.jar \
+          -o gradle/wrapper/gradle-wrapper.jar
 
-    - name: Decode Keystore
-      run: |
-        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/keystore.jks
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
 
-    - name: Build Release AAB
-      run: ./gradlew bundleRelease
-      env:
-        SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-        SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        SIGNING_STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
-
-    - name: Build Release APK
-      run: ./gradlew assembleRelease
-      env:
-        SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-        SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        SIGNING_STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
-
-    - name: Upload AAB
-      uses: actions/upload-artifact@v4
-      with:
-        name: medcare-release-aab
-        path: app/build/outputs/bundle/release/*.aab
-
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: medcare-release-apk
-        path: app/build/outputs/apk/release/*.apk
+    - name: Build with Gradle
+      run: ./gradlew build
