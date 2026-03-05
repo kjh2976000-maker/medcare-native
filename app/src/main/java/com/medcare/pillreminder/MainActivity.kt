@@ -22,73 +22,69 @@ import com.medcare.pillreminder.data.DataStore
 import com.medcare.pillreminder.data.Medication
 
 class MainActivity : AppCompatActivity() {
+
     private lateinit var webView: WebView
-    private lateinit var dataStore: DataStore
     private lateinit var alarmHelper: AlarmHelper
+    private val dataStore by lazy { DataStore(this) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        setContentView(android.R.layout.activity_list_item)
 
-        dataStore = DataStore(this)
         alarmHelper = AlarmHelper(this)
 
-        webView = findViewById(R.id.webView)
-        setupWebView()
+        // 알람 권한 요청
+        requestAlarmPermissions()
 
-        requestPermissions()
-    }
+        webView = WebView(this)
+        setContentView(webView)
 
-    private fun setupWebView() {
-        webView.settings.apply {
-            javaScriptEnabled = true
-            domStorageEnabled = true
-            allowFileAccess = true
-            setSupportZoom(false)
-        }
-        webView.webViewClient = WebViewClient()
+        webView.settings.javaScriptEnabled = true
+        webView.settings.domStorageEnabled = true
         webView.webChromeClient = WebChromeClient()
-        webView.addJavascriptInterface(NativeBridge(), "NativeBridge")
+        webView.webViewClient = WebViewClient()
+        webView.addJavascriptInterface(WebAppInterface(), "Android")
         webView.loadUrl("https://kjh2976000-maker.github.io/medcare-app/")
     }
 
-    private fun requestPermissions() {
-        // Notification permission (Android 13+)
+    private fun requestAlarmPermissions() {
+        // 알림 권한 (Android 13+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) 
                 != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this,
-                    arrayOf(Manifest.permission.POST_NOTIFICATIONS), 100)
+                requestPermissions(
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1
+                )
             }
         }
 
-        // Exact alarm permission (Android 12+)
+        // 정확한 알람 권한 (Android 12+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val am = getSystemService(ALARM_SERVICE) as AlarmManager
-            if (!am.canScheduleExactAlarms()) {
-                try {
-                    startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
-                        data = Uri.parse("package:$packageName")
-                    })
-                } catch (_: Exception) {}
+            val alarmManager = getSystemService(ALARM_SERVICE) as AlarmManager
+            if (!alarmManager.canScheduleExactAlarms()) {
+                val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+                intent.data = Uri.parse("package:$packageName")
+                startActivity(intent)
             }
         }
     }
 
-    // JavaScript bridge for native alarm scheduling
-    inner class NativeBridge {
+    inner class WebAppInterface {
         @JavascriptInterface
-        fun scheduleMedAlarms(medicationsJson: String) {
-            try {
-                val type = object : TypeToken<List<Medication>>() {}.type
-                val meds: List<Medication> = Gson().fromJson(medicationsJson, type)
-                dataStore.saveMedications(meds)
-                alarmHelper.scheduleAllAlarms()
-            } catch (e: Exception) {
-                runOnUiThread {
-                    Toast.makeText(this@MainActivity, "알람 설정 완료", Toast.LENGTH_SHORT).show()
-                }
+        fun saveMedications(json: String) {
+            val type = object : TypeToken<List<Medication>>() {}.type
+            val meds: List<Medication> = Gson().fromJson(json, type)
+            dataStore.saveMedications(meds)
+            alarmHelper.scheduleAllAlarms()
+            runOnUiThread {
+                Toast.makeText(this@MainActivity, "알람 설정 완료", Toast.LENGTH_SHORT).show()
             }
+        }
+
+        @JavascriptInterface
+        fun getMedications(): String {
+            val meds = dataStore.loadMedications()
+            return Gson().toJson(meds)
         }
 
         @JavascriptInterface
@@ -114,7 +110,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Reschedule alarms every time app is opened
         alarmHelper.scheduleAllAlarms()
     }
 }
