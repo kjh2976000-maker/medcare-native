@@ -1,102 +1,74 @@
 package com.medcare.pillreminder
 
-import android.Manifest
-import android.app.AlarmManager
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
-import android.os.Bundle
-import android.provider.Settings
-import android.webkit.JavascriptInterface
-import android.webkit.WebChromeClient
-import android.webkit.WebView
-import android.webkit.WebViewClient
-import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
-import com.medcare.pillreminder.data.DataStore
-import com.medcare.pillreminder.data.Medication
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
+import androidx.core.app.NotificationCompat
 
-class MainActivity : AppCompatActivity() {
+class AlarmReceiver : BroadcastReceiver() {
 
-    private lateinit var webView: WebView
-    private lateinit var alarmHelper: AlarmHelper
-    private val dataStore by lazy { DataStore(this) }
+    override fun onReceive(context: Context, intent: Intent) {
+        val medName = intent.getStringExtra("med_name") ?: ""
+        val medDosage = intent.getStringExtra("med_dosage") ?: ""
+        val medId = intent.getStringExtra("med_id") ?: "0"
+        val isAdvance = intent.getBooleanExtra("is_advance", false)
+        val isRepeat = intent.getBooleanExtra("is_repeat", false)
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+        val title = when {
+            isAdvance -> "💊 약 복용 30분 전입니다"
+            isRepeat -> "⏰ 아직 약을 드셨나요?"
+            else -> "💊 약 복용 시간입니다"
+        }
 
-        alarmHelper = AlarmHelper(this)
-        requestAlarmPermissions()
+        val body = if (medDosage.isNotEmpty()) "$medName $medDosage" else medName
 
-        webView = WebView(this)
-        setContentView(webView)
-
-        webView.settings.javaScriptEnabled = true
-        webView.settings.domStorageEnabled = true
-        webView.webChromeClient = WebChromeClient()
-        webView.webViewClient = WebViewClient()
-        webView.addJavascriptInterface(WebAppInterface(), "Android")
-        webView.loadUrl("https://kjh2976000-maker.github.io/medcare-app/")
-    }
-
-    private fun requestAlarmPermissions() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
-                != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val vm = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+                vm.defaultVibrator.vibrate(
+                    VibrationEffect.createWaveform(longArrayOf(0, 500, 100, 500), -1)
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                val v = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+                @Suppress("DEPRECATION")
+                v.vibrate(longArrayOf(0, 500, 100, 500), -1)
             }
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val alarmManager = getSystemService(ALARM_SERVICE) as AlarmManager
-            if (!alarmManager.canScheduleExactAlarms()) {
-                val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
-                intent.data = Uri.parse("package:$packageName")
-                startActivity(intent)
-            }
-        }
-    }
-
-    inner class WebAppInterface {
-        @JavascriptInterface
-        fun saveMedications(json: String) {
-            val type = object : TypeToken<List<Medication>>() {}.type
-            val meds: List<Medication> = Gson().fromJson(json, type)
-            dataStore.saveMedications(meds)
-            alarmHelper.scheduleAllAlarms()
-            runOnUiThread {
-                Toast.makeText(this@MainActivity, "알람 설정 완료", Toast.LENGTH_SHORT).show()
-            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
 
-        @JavascriptInterface
-        fun getMedications(): String {
-            return Gson().toJson(dataStore.loadMedications())
+        val fullScreenIntent = Intent(context, AlarmActivity::class.java).apply {
+            putExtra("med_name", medName)
+            putExtra("med_dosage", medDosage)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }
 
-        @JavascriptInterface
-        fun showToast(message: String) {
-            runOnUiThread {
-                Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
-            }
-        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            medId.hashCode() * 1000,
+            fullScreenIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
 
-        @JavascriptInterface
-        fun isNativeApp(): Boolean = true
-    }
+        val notification = NotificationCompat.Builder(context, MedCareApp.CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .setFullScreenIntent(pendingIntent, true)
+            .build()
 
-    override fun onBackPressed() {
-        if (webView.canGoBack()) {
-            webView.goBack()
-        } else {
-            super.onBackPressed()
-        }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        alarmHelper.scheduleAllAlarms()
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        manager.notify(medId.hashCode(), notification)
     }
 }
