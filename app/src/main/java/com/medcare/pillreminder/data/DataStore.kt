@@ -19,7 +19,7 @@ class DataStore(context: Context) {
         return gson.fromJson(json, type)
     }
 
-    fun saveHistory(history: Map<String, Map<String, Boolean>>) {
+    fun saveHistory(history: MutableMap<String, MutableMap<String, Boolean>>) {
         prefs.edit().putString("history", gson.toJson(history)).apply()
     }
 
@@ -30,42 +30,20 @@ class DataStore(context: Context) {
     }
 
     fun saveChecksDate(date: String) {
-        prefs.edit().putString("checksDate", date).apply()
+        prefs.edit().putString("checksData", date).apply()
     }
 
     fun loadChecksDate(): String {
-        return prefs.getString("checksDate", "") ?: ""
+        return prefs.getString("checksData", "") ?: ""
     }
 
-    fun saveContacts(contacts: List<Contact>) {
+    fun saveContacts(contacts: List<Any>) {
         prefs.edit().putString("contacts", gson.toJson(contacts)).apply()
     }
 
-    fun loadContacts(): MutableList<Contact> {
+    fun loadContacts(): MutableList<Any> {
         val json = prefs.getString("contacts", null) ?: return mutableListOf()
-        val type = object : TypeToken<MutableList<Contact>>() {}.type
+        val type = object : TypeToken<MutableList<Any>>() {}.type
         return gson.fromJson(json, type)
     }
-
-    fun saveFontSize(idx: Int) {
-        prefs.edit().putInt("fontIdx", idx).apply()
-    }
-
-    fun loadFontSize(): Int {
-        return prefs.getInt("fontIdx", 0)
-    }
-
-    fun exportAll(): String {
-        val data = mapOf(
-            "medications" to loadMedications(),
-            "history" to loadHistory(),
-            "contacts" to loadContacts()
-        )
-        return gson.toJson(data)
-    }
 }
-
-data class Contact(
-    var name: String = "",
-    var phone: String = ""
-)
