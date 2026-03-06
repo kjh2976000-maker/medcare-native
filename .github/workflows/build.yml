@@ -67,13 +67,12 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build Release AAB
-        run: ./gradlew bundleRelease
-        env:
-          SIGNING_STORE_PASSWORD: $STORE_PASSWORD
-          SIGNING_KEY_ALIAS: $KEY_ALIAS
-          SIGNING_KEY_PASSWORD: $KEY_PASSWORD
-
+    - name: Build Release AAB
+  run: ./gradlew bundleRelease
+  env:
+    SIGNING_STORE_PASSWORD: ${{ env.STORE_PASSWORD }}
+    SIGNING_KEY_ALIAS: ${{ env.KEY_ALIAS }}
+    SIGNING_KEY_PASSWORD: ${{ env.KEY_PASSWORD }}
       - name: Upload Release AAB
         uses: actions/upload-artifact@v4
         with:
