@@ -1,44 +1,52 @@
-<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+package com.medcare.pillreminder
 
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import android.os.Bundle
+import android.widget.Button
+import android.widget.TimePicker
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 
-    <application
-        android:name=".MedCareApp"
-        android:allowBackup="true"
-        android:supportsRtl="true">
+class MainActivity : AppCompatActivity() {
 
-        <activity
-            android:name=".AlarmActivity"
-            android:exported="false" />
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            Toast.makeText(this, "알림 권한이 허용되었습니다", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this, "알림 권한이 필요합니다", Toast.LENGTH_SHORT).show()
+        }
+    }
 
-        <activity
-            android:name=".MainActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
 
-        <receiver
-            android:name=".AlarmReceiver"
-            android:exported="false" />
+        // Android 13 이상 알림 권한 요청
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    this, Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
 
-        <receiver
-            android:name=".BootReceiver"
-            android:enabled="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-            </intent-filter>
-        </receiver>
+        val timePicker = findViewById<TimePicker>(R.id.timePicker)
+        val btnSave = findViewById<Button>(R.id.btnSave)
 
-    </application>
+        timePicker.setIs24HourView(true)
 
-</manifest>
+        btnSave.setOnClickListener {
+            val hour = timePicker.hour
+            val minute = timePicker.minute
+            AlarmHelper.setAlarm(this, hour, minute)
+            Toast.makeText(this, "${hour}시 ${minute}분 알람이 설정되었습니다", Toast.LENGTH_SHORT).show()
+        }
+    }
+}
