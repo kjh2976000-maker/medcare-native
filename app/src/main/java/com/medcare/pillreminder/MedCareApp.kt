@@ -1,33 +1,44 @@
-package com.medcare.pillreminder
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-import android.app.Application
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.media.AudioAttributes
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
-class MedCareApp : Application() {
-    companion object {
-        const val CHANNEL_ID = "medcare_alarm"
-    }
+    <application
+        android:name=".MedCareApp"
+        android:allowBackup="true"
+        android:supportsRtl="true">
 
-    override fun onCreate() {
-        super.onCreate()
-        createNotificationChannel()
-    }
+        <activity
+            android:name=".AlarmActivity"
+            android:exported="false" />
 
-    private fun createNotificationChannel() {
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            "복약 알림",
-            NotificationManager.IMPORTANCE_HIGH
-        ).apply {
-            description = "복약 시간 알림"
-            enableVibration(true)
-            vibrationPattern = longArrayOf(0, 300, 100, 300, 100, 300)
-            setBypassDnd(true)
-            lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
-        }
-        val manager = getSystemService(NotificationManager::class.java)
-        manager.createNotificationChannel(channel)
-    }
-}
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <receiver
+            android:name=".AlarmReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+    </application>
+
+</manifest>
