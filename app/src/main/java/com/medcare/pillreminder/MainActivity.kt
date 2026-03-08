@@ -8,9 +8,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.widget.Button
-import android.widget.TimePicker
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -23,34 +20,19 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
 
         requestNotificationPermission()
         requestExactAlarmPermission()
 
-        val timePicker = findViewById<TimePicker>(R.id.timePicker)
-        val btnSave = findViewById<Button>(R.id.btnSave)
-
-        timePicker.setIs24HourView(true)
-
-        btnSave.setOnClickListener {
-            val hour = timePicker.hour
-            val minute = timePicker.minute
-            val helper = AlarmHelper(this)
-            helper.scheduleAlarm(hour, minute)
-            Toast.makeText(
-                this,
-                "${hour}시 ${minute}분 알람이 설정되었습니다",
-                Toast.LENGTH_SHORT
-            ).show()
-        }
+        // 바로 약 목록 화면으로 이동
+        startActivity(Intent(this, MedicationListActivity::class.java))
+        finish()
     }
 
     private fun requestNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.POST_NOTIFICATIONS
+                    this, Manifest.permission.POST_NOTIFICATIONS
                 ) != PackageManager.PERMISSION_GRANTED
             ) {
                 ActivityCompat.requestPermissions(
