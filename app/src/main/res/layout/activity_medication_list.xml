@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#1B4F72"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="💊 복약케어"
+        android:textSize="28sp"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"
+        android:layout_marginBottom="4dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="복약 알림 목록"
+        android:textSize="14sp"
+        android:textColor="#B0C4DE"
+        android:layout_marginBottom="16dp" />
+
+    <Button
+        android:id="@+id/btnAddMed"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="+ 약 추가"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:backgroundTint="#27AE60"
+        android:textColor="#FFFFFF"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:id="@+id/tvEmpty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="등록된 약이 없습니다.\n+ 약 추가 버튼을 눌러주세요."
+        android:textSize="16sp"
+        android:textColor="#B0C4DE"
+        android:gravity="center"
+        android:layout_marginTop="60dp"
+        android:visibility="gone" />
+
+    <ListView
+        android:id="@+id/listViewMeds"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+</LinearLayout>
