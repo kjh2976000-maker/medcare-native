@@ -26,6 +26,14 @@
         </activity>
 
         <activity
+            android:name=".MedicationListActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".AddMedicationActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".AlarmActivity"
             android:exported="false"
             android:showWhenLocked="true"
