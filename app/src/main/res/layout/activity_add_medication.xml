@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#1B4F72">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="💊 약 추가"
+            android:textSize="28sp"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:layout_marginBottom="24dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="약 이름"
+            android:textSize="16sp"
+            android:textColor="#B0C4DE"
+            android:layout_marginBottom="8dp" />
+
+        <EditText
+            android:id="@+id/etMedName"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:hint="예: 혈압약, 비타민"
+            android:textColor="#FFFFFF"
+            android:textColorHint="#7F8C8D"
+            android:background="#2C3E50"
+            android:paddingHorizontal="16dp"
+            android:textSize="16sp"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="용량 (선택)"
+            android:textSize="16sp"
+            android:textColor="#B0C4DE"
+            android:layout_marginBottom="8dp" />
+
+        <EditText
+            android:id="@+id/etMedDosage"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:hint="예: 1정, 2캡슐"
+            android:textColor="#FFFFFF"
+            android:textColorHint="#7F8C8D"
+            android:background="#2C3E50"
+            android:paddingHorizontal="16dp"
+            android:textSize="16sp"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="알람 시간"
+            android:textSize="16sp"
+            android:textColor="#B0C4DE"
+            android:layout_marginBottom="8dp" />
+
+        <TimePicker
+            android:id="@+id/timePickerMed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginBottom="32dp" />
+
+        <Button
+            android:id="@+id/btnSaveMed"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:text="저장"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:backgroundTint="#27AE60"
+            android:textColor="#FFFFFF"
+            android:layout_marginBottom="12dp" />
+
+        <Button
+            android:id="@+id/btnCancel"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:text="취소"
+            android:textSize="18sp"
+            android:backgroundTint="#7F8C8D"
+            android:textColor="#FFFFFF" />
+
+    </LinearLayout>
+</ScrollView>
