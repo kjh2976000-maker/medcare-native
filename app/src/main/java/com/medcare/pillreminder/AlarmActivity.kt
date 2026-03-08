@@ -1,11 +1,14 @@
 package com.medcare.pillreminder
 
 import android.app.KeyguardManager
+import android.app.NotificationManager
 import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.media.RingtoneManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
@@ -17,11 +20,18 @@ import androidx.appcompat.app.AppCompatActivity
 class AlarmActivity : AppCompatActivity() {
     private var mediaPlayer: MediaPlayer? = null
     private var vibrator: Vibrator? = null
+    private val handler = Handler(Looper.getMainLooper())
+
+    // 10분 후 자동 종료
+    private val autoStopRunnable = Runnable {
+        stopAlarm()
+        finish()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Show on lock screen
+        // 잠금화면에서도 표시
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true)
             setTurnScreenOn(true)
@@ -39,38 +49,49 @@ class AlarmActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_alarm)
 
-        val medName = intent.getStringExtra("med_name") ?: "약"
+        val medName = intent.getStringExtra("med_name") ?: "복약 시간"
         val medDosage = intent.getStringExtra("med_dosage") ?: ""
 
         findViewById<TextView>(R.id.tvAlarmTitle).text = "💊 복약 시간입니다"
         findViewById<TextView>(R.id.tvAlarmMedName).text = medName
-        findViewById<TextView>(R.id.tvAlarmDosage).text = if (medDosage.isNotEmpty()) medDosage else ""
+        findViewById<TextView>(R.id.tvAlarmDosage).text = medDosage
 
         findViewById<Button>(R.id.btnConfirm).setOnClickListener {
             stopAlarm()
+            // 알림도 제거
+            val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+            manager.cancelAll()
             finish()
         }
 
         startAlarm()
+
+        // 10분 후 자동 종료
+        handler.postDelayed(autoStopRunnable, 10 * 60 * 1000)
     }
 
     private fun startAlarm() {
-        // Play alarm sound
+        // 알람 소리 재생 (루프)
         try {
             val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
             mediaPlayer = MediaPlayer().apply {
-                setAudioAttributes(AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ALARM)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .build())
+                setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_ALARM)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build()
+                )
                 setDataSource(this@AlarmActivity, uri)
                 isLooping = true
                 prepare()
                 start()
             }
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
 
-        // Vibrate
+        // 진동 (반복)
         try {
             vibrator = if (Build.VERSION.SDK_INT >= 31) {
                 val vm = getSystemService(VIBRATOR_MANAGER_SERVICE) as VibratorManager
@@ -79,11 +100,15 @@ class AlarmActivity : AppCompatActivity() {
                 @Suppress("DEPRECATION")
                 getSystemService(VIBRATOR_SERVICE) as Vibrator
             }
-            vibrator?.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 500, 200, 500, 200, 500), 0))
-        } catch (_: Exception) {}
+            val pattern = longArrayOf(0, 500, 500, 500, 500, 500)
+            vibrator?.vibrate(VibrationEffect.createWaveform(pattern, 0))
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private fun stopAlarm() {
+        handler.removeCallbacks(autoStopRunnable)
         mediaPlayer?.stop()
         mediaPlayer?.release()
         mediaPlayer = null
